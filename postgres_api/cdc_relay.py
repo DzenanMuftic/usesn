@@ -30,6 +30,10 @@ SERVICENOW_PASSWORD = '$Jtp8YmJ/8qB'
 # Channel to listen on
 NOTIFY_CHANNEL = 'person_changes'
 
+# Periodic full reconciliation interval (seconds). This protects against
+# missed NOTIFY events when the relay is temporarily down.
+RECONCILE_INTERVAL_SECONDS = int(os.environ.get('RECONCILE_INTERVAL_SECONDS', '60'))
+
 
 def log(message):
     """Simple logging with timestamp"""
@@ -58,6 +62,57 @@ def upsert_in_servicenow(person_data):
             log(f"✗ ServiceNow upsert returned {r.status_code}: {r.text}")
     except Exception as e:
         log(f"✗ Error upserting in ServiceNow: {e}")
+
+
+def reconcile_from_postgres_once():
+    """Backfill ServiceNow mirror from PostgreSQL current state.
+
+    NOTIFY is not durable; if this listener is down, events are missed.
+    This reconciliation ensures mirror correctness after restarts/outages.
+    """
+    conn = None
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT id, name, surname FROM persons ORDER BY id")
+        pg_rows = cur.fetchall()
+
+        r = requests.get(
+            SN_TABLE_URL,
+            params={
+                'sysparm_fields': 'external_id',
+                'sysparm_limit': 10000,
+            },
+            auth=(SERVICENOW_USER, SERVICENOW_PASSWORD),
+            timeout=20,
+        )
+        if r.status_code != 200:
+            log(f"✗ Reconcile failed to read ServiceNow table: {r.status_code} {r.text}")
+            return
+
+        sn_ids = set()
+        for rec in r.json().get('result', []):
+            ext = rec.get('external_id')
+            if ext not in (None, ''):
+                sn_ids.add(str(ext))
+
+        missing = 0
+        for row in pg_rows:
+            pid, name, surname = row
+            if str(pid) in sn_ids:
+                continue
+            missing += 1
+            upsert_in_servicenow({'id': pid, 'name': name or '', 'surname': surname or ''})
+
+        if missing:
+            log(f"✓ Reconcile backfilled {missing} missing row(s) into ServiceNow")
+        else:
+            log("✓ Reconcile found no missing rows")
+    except Exception as e:
+        log(f"✗ Reconcile error: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def delete_from_servicenow(person_id):
@@ -92,6 +147,7 @@ def delete_from_servicenow(person_id):
 def listen_for_changes():
     """Listen for PostgreSQL NOTIFY events and forward to ServiceNow"""
     log(f"Starting CDC relay listener for channel '{NOTIFY_CHANNEL}'...")
+    last_reconcile = 0.0
     
     while True:
         try:
@@ -103,6 +159,10 @@ def listen_for_changes():
             # Subscribe to notification channel
             cur.execute(f"LISTEN {NOTIFY_CHANNEL};")
             log(f"✓ Connected and listening on channel '{NOTIFY_CHANNEL}'")
+
+            # Startup catch-up in case notifications were missed while relay was down.
+            reconcile_from_postgres_once()
+            last_reconcile = time.time()
             
             # Poll for notifications
             while True:
@@ -126,6 +186,13 @@ def listen_for_changes():
                             log(f"✗ Failed to parse notification payload: {e}")
                         except Exception as e:
                             log(f"✗ Error processing notification: {e}")
+
+                # Periodic catch-up protects against transient disconnects and
+                # non-durable NOTIFY delivery gaps.
+                now = time.time()
+                if now - last_reconcile >= RECONCILE_INTERVAL_SECONDS:
+                    reconcile_from_postgres_once()
+                    last_reconcile = now
                 
                 # Wait a bit before next poll
                 time.sleep(0.5)
