@@ -1,7 +1,10 @@
 #!/bin/bash
 # Start the Flask REST API server
 
-export POSTGRES_API_KEY="your-secure-api-key-here"
+set -euo pipefail
+
+# Default to the integration key used by ServiceNow unless explicitly overridden.
+export POSTGRES_API_KEY="${POSTGRES_API_KEY:-sn-postgres-api-key-2024}"
 
 cd "$(dirname "$0")"
 

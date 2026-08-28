@@ -1,0 +1,17 @@
+[Unit]
+Description=PostgreSQL Persons Flask API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/backup_share/kodiranje82/spajanje_nps/postgres_api
+Environment=POSTGRES_API_KEY=sn-postgres-api-key-2024
+ExecStart=/mnt/backup_share/kodiranje82/spajanje_nps/postgres_api/venv/bin/python /mnt/backup_share/kodiranje82/spajanje_nps/postgres_api/app.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/tmp/postgres_api_systemd.log
+StandardError=append:/tmp/postgres_api_systemd.log
+
+[Install]
+WantedBy=default.target
