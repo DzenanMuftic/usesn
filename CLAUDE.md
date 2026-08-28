@@ -113,47 +113,58 @@ curl -s -u 'admin:$Jtp8YmJ/8qB' \
 
 ---
 
-## Sync Architecture
+## Sync Architecture — One-Way Mirror
 
 ```
-User chat (asistentica.online)
+All writes converge on PostgreSQL:
+
+  External app (asistentica.online)
+        │  POST first_name + last_name (no external_id needed)
+        ▼
+  ServiceNow  x_2210864_person_person
+        │  Business Rule fires on INSERT/UPDATE
+        │  → PostgresPersonClient.createPerson / updatePerson
+        │  → MID Server b-smstest-mid01
+        │  → Flask API  http://192.168.241.82:5000/api
+        │  → PostgreSQL persons  (Postgres assigns id)
+        │  Business Rule stamps external_id = returned Postgres id
+        │
+  Local app (localapp, port 5018)
+        │  INSERT directly into PostgreSQL persons
         │
         ▼
-ServiceNow REST API  (dev337113.service-now.com)
-        │  Table: x_2210864_person_person
+  PostgreSQL persons  ◄── single source of truth
         │
-        ├─── on INSERT/UPDATE ──► Business Rule "Push Person to Postgres"
-        │                              │
-        │                              ▼
-        │                     Script Include: PostgresPersonClient
-        │                              │  setMIDServer("b-smstest-mid01")
-        │                              ▼
-        │                     MID Server: b-smstest-mid01 (192.168.241.82)
-        │                              │
-        │                              ▼
-        │                     Flask API  http://192.168.241.82:5000/api
-        │                              │
-        │                              ▼
-        │                     PostgreSQL servnow.persons
-        │
-        └─── CDC (Postgres → SN) ──► pg_notify trigger → cdc_relay.py
-                                           │
-                                           ▼
-                              POST /api/x_2210864_person/person_inbound/persons
+        │  pg_notify trigger → cdc_relay.py
+        │       INSERT / UPDATE → POST inbound handler → mirror upsert in SN
+        │       DELETE          → DELETE SN record via Table API
+        ▼
+  ServiceNow x_2210864_person_person  ← read-only CDC mirror
 ```
+
+**Key rules:**
+- `external_id` in ServiceNow = `id` in PostgreSQL, auto-stamped by Business Rule after INSERT
+- Never pre-compute a next id; Postgres assigns its own sequence id
+- ServiceNow inbound handler uses `setWorkflow(false)` — CDC updates never trigger outbound push
 
 ---
 
 ## Workflow for inserting a person from chat
 
-1. Ask Flask for the max current `id` to pick the next `external_id`:
+1. POST directly to ServiceNow — **no external_id needed**, no pre-fetch of next id:
+   ```bash
+   curl -s -u 'admin:$Jtp8YmJ/8qB' \
+     -X POST -H 'Content-Type: application/json' \
+     -d '{"first_name":"<name>","last_name":"<surname>"}' \
+     'https://dev337113.service-now.com/api/now/table/x_2210864_person_person'
+   ```
+2. Business Rule fires → Flask inserts to Postgres → Postgres assigns `id` → BR stamps `external_id` and `last_synced` on the ServiceNow record.
+3. CDC relay picks up the Postgres INSERT and confirms the mirror in ServiceNow.
+4. Verify the row exists in PostgreSQL via Flask GET:
    ```bash
    curl -s -H 'X-API-Key: sn-postgres-api-key-2024' \
-     'http://192.168.241.82:5000/api/persons?limit=1' | python3 -m json.tool
+     'http://192.168.241.82:5000/api/persons' | python3 -m json.tool
    ```
-2. POST the new record to ServiceNow with `external_id = max_id + 1`.
-3. Confirm `last_synced` is populated on the ServiceNow record (proves Business Rule succeeded).
-4. Verify the row exists in PostgreSQL via Flask GET.
 
 ---
 
