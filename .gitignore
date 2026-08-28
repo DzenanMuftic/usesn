@@ -5,3 +5,6 @@ node_modules/
 target/
 *.tsbuildinfo
 .jest_cache
+postgres_api/venv/
+postgres_api/api.log
+psql*
