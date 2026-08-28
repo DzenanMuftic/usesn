@@ -1,0 +1,6 @@
+{
+    "scope": "x_2210864_person",
+    "scopeId": "138bae057ce445d2b54644d86b306f67",
+    "name": "Postgres Person Sync",
+    "tsconfigPath": "./src/server/tsconfig.json"
+}

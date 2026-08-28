@@ -1,0 +1,31 @@
+                  List of relations
+ Schema |           Name           | Type  |  Owner   
+--------+--------------------------+-------+----------
+ public | dp_placanje              | table | postgres
+ public | dp_poruka_naplate        | table | postgres
+ public | ik1klasifikacija         | table | postgres
+ public | ik1obracun               | table | postgres
+ public | jk2dodatnipodaci         | table | postgres
+ public | jk2dodatnipodacikmt      | table | postgres
+ public | jk2komitenti             | table | postgres
+ public | jk2segkmt                | table | postgres
+ public | kd2dospecadepoziti       | table | postgres
+ public | kd2pustanjasredstava     | table | postgres
+ public | kd2ugovori               | table | postgres
+ public | ks2finelementi           | table | postgres
+ public | ks2okvirnikrediti        | table | postgres
+ public | ks2stanjaperiodicna      | table | postgres
+ public | l_instrument_placanja    | table | postgres
+ public | l_stanje                 | table | postgres
+ public | lkonstante               | table | postgres
+ public | pc1izmenestatusa         | table | postgres
+ public | pc1izmenestatusaplastike | table | postgres
+ public | pc1kartice               | table | postgres
+ public | pc1kreditnilimiti        | table | postgres
+ public | pc1nosilac               | table | postgres
+ public | pc1racuninosioca         | table | postgres
+ public | pc1tipkartice            | table | postgres
+ public | rc1partije               | table | postgres
+ public | rc1povezanepartije       | table | postgres
+(26 rows)
+
