@@ -10,9 +10,7 @@
         var payload = {
             external_id: externalId,
             first_name: current.getValue('first_name') || '',
-            last_name: current.getValue('last_name') || '',
-            email: current.getValue('email') || '',
-            phone: current.getValue('phone') || ''
+            last_name: current.getValue('last_name') || ''
         };
 
         var client = new x_2210864_person.PostgresPersonClient();

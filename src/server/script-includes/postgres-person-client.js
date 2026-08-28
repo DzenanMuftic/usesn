@@ -81,8 +81,6 @@ PostgresPersonClient.prototype = {
             rm.setStringParameterNoEscape('externalId', person.external_id || '')
             rm.setStringParameterNoEscape('firstName', person.first_name || '')
             rm.setStringParameterNoEscape('lastName', person.last_name || '')
-            rm.setStringParameterNoEscape('email', person.email || '')
-            rm.setStringParameterNoEscape('phone', person.phone || '')
         })
     },
 
@@ -92,8 +90,6 @@ PostgresPersonClient.prototype = {
             rm.setStringParameterNoEscape('externalId', externalId)
             rm.setStringParameterNoEscape('firstName', person.first_name || '')
             rm.setStringParameterNoEscape('lastName', person.last_name || '')
-            rm.setStringParameterNoEscape('email', person.email || '')
-            rm.setStringParameterNoEscape('phone', person.phone || '')
         })
     },
 

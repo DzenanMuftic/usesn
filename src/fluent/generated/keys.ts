@@ -44,6 +44,7 @@ declare global {
                     'pg-person-create-var-email': {
                         table: 'sys_rest_message_fn_parameters'
                         id: 'c1eec885f3bc4721bf35301c9b858824'
+                        deleted: true
                     }
                     'pg-person-create-var-external-id': {
                         table: 'sys_rest_message_fn_parameters'
@@ -60,6 +61,7 @@ declare global {
                     'pg-person-create-var-phone': {
                         table: 'sys_rest_message_fn_parameters'
                         id: 'abefb9cbb3284be595ff210ea39b342b'
+                        deleted: true
                     }
                     'pg-person-get-header-apikey': {
                         table: 'sys_rest_message_fn_headers'
@@ -116,6 +118,7 @@ declare global {
                     'pg-person-update-var-email': {
                         table: 'sys_rest_message_fn_parameters'
                         id: 'c45ed79bc82b4363bb84882c07f4de8a'
+                        deleted: true
                     }
                     'pg-person-update-var-external-id': {
                         table: 'sys_rest_message_fn_parameters'
@@ -132,6 +135,7 @@ declare global {
                     'pg-person-update-var-phone': {
                         table: 'sys_rest_message_fn_parameters'
                         id: 'ff1f95aeac074bf3800cc4016c885488'
+                        deleted: true
                     }
                     'pgsync-api-base-url': {
                         table: 'sys_properties'
@@ -194,6 +198,7 @@ declare global {
                     {
                         table: 'sys_documentation'
                         id: '03531308f24843709be6c2213063f731'
+                        deleted: true
                         key: {
                             name: 'x_2210864_person_person'
                             element: 'email'
@@ -269,6 +274,7 @@ declare global {
                     {
                         table: 'sys_dictionary'
                         id: '7bca97ccb56c493f9673f9d4d111f50c'
+                        deleted: true
                         key: {
                             name: 'x_2210864_person_person'
                             element: 'email'
@@ -298,6 +304,7 @@ declare global {
                     {
                         table: 'sys_dictionary'
                         id: '98991051a47a40d5a79b26ae2076e45b'
+                        deleted: true
                         key: {
                             name: 'x_2210864_person_person'
                             element: 'phone'
@@ -315,6 +322,7 @@ declare global {
                     {
                         table: 'sys_documentation'
                         id: 'a26cbe2e62564267844a0b3a81b131e7'
+                        deleted: true
                         key: {
                             name: 'x_2210864_person_person'
                             element: 'phone'

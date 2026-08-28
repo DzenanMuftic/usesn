@@ -32,8 +32,6 @@ export function upsertPerson(request: any, response: any) {
 
     if (payload.first_name !== undefined) gr.setValue('first_name', payload.first_name)
     if (payload.last_name !== undefined) gr.setValue('last_name', payload.last_name)
-    if (payload.email !== undefined) gr.setValue('email', payload.email)
-    if (payload.phone !== undefined) gr.setValue('phone', payload.phone)
     gr.setValue('last_synced', new GlideDateTime().getValue())
 
     // This data already originated from Postgres -- skip the outbound push
