@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Random Ayah</title>
-  <meta name="description" content="A random ayah from the Holy Quran with translation and recitation.">
+  <meta name="description" content="A random ayah from a selection of the Holy Quran with translation and recitation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -120,6 +120,9 @@
       font-weight: 600;
       padding: 10px 20px;
     }
+    .picks { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
+    .picks button { font-size: 0.85rem; padding: 6px 12px; border-radius: 999px; color: var(--muted); }
+    .picks button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); font-weight: 600; }
     .status { text-align: center; color: var(--muted); min-height: 1.5em; margin-top: 12px; font-size: 0.9rem; }
     .loading .arabic, .loading .translation { opacity: 0.35; transition: opacity 0.2s; }
 
@@ -131,8 +134,8 @@
   <header>
     <h1>Random Ayah</h1>
     <select id="lang" aria-label="Translation language">
-      <option value="en.sahih">English (Saheeh International)</option>
       <option value="bs.korkut">Bosanski (Korkut)</option>
+      <option value="en.sahih">English (Saheeh International)</option>
       <option value="bs.mlivo">Bosanski (Mlivo)</option>
       <option value="tr.diyanet">Türkçe (Diyanet)</option>
       <option value="de.aburida">Deutsch (Abu Rida)</option>
@@ -154,6 +157,7 @@
       <button id="copy" disabled>Copy</button>
       <button id="share" disabled>Share link</button>
     </div>
+    <nav class="picks" id="picks" aria-label="Choose an ayah"></nav>
     <div class="status" id="status"></div>
     <audio id="audio" preload="none"></audio>
   </main>
@@ -165,7 +169,14 @@
   </footer>
 
   <script>
-    const TOTAL_AYAHS = 6236;
+    // The selection of ayahs the page picks from: [surah, ayah, label]
+    const AYAHS = [
+      [4, 136, "En-Nisa 136"],
+      [16, 89, "En-Nahl 89"],
+      [30, 30, "Er-Rum 30"],
+      [3, 85, "Ali Imran 85"],
+      [7, 172, "El-A'raf 172"],
+    ];
     const API = "https://api.alquran.cloud/v1/ayah/";
     const $ = (id) => document.getElementById(id);
     const audio = $("audio");
@@ -177,17 +188,28 @@
     const savedLang = storageGet("ayah-lang");
     if (savedLang && [...$("lang").options].some(o => o.value === savedLang)) $("lang").value = savedLang;
 
+    const refOf = ([s, a]) => `${s}:${a}`;
+
     function ayahFromHash() {
-      const m = location.hash.match(/^#(\d+)$/);
-      const n = m ? parseInt(m[1], 10) : NaN;
-      return n >= 1 && n <= TOTAL_AYAHS ? n : null;
+      const ref = location.hash.slice(1);
+      return AYAHS.some(x => refOf(x) === ref) ? ref : null;
     }
 
+    // Random pick from the selection, never repeating the one on screen
     function randomAyah() {
+      const pool = AYAHS.map(refOf).filter(r => !current || r !== current.number);
       const buf = new Uint32Array(1);
       crypto.getRandomValues(buf);
-      return (buf[0] % TOTAL_AYAHS) + 1;
+      return pool[buf[0] % pool.length];
     }
+
+    AYAHS.forEach((x) => {
+      const b = document.createElement("button");
+      b.textContent = x[2];
+      b.dataset.ref = refOf(x);
+      b.addEventListener("click", () => load(b.dataset.ref));
+      $("picks").append(b);
+    });
 
     function setStatus(msg) { $("status").textContent = msg; }
 
@@ -205,6 +227,8 @@
         current = { number, ar, tr, audio: rec.audio };
         render();
         history.replaceState(null, "", `#${number}`);
+        document.querySelectorAll("#picks button").forEach(b =>
+          b.setAttribute("aria-pressed", String(b.dataset.ref === number)));
       } catch (err) {
         $("ref").textContent = "Could not load the ayah.";
         setStatus("Check your connection and press “New ayah” to try again.");
